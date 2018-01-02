@@ -16,7 +16,7 @@ void loop() {
 //  digitalWrite(A0, HIGH); 
 digitalWrite(10, HIGH);   
 digitalWrite(9, LOW);
-delay(5000);
+delay(4000);
 //digitalWrite(A0, LOW); 
 digitalWrite(10, LOW); 
 delay(5000);
