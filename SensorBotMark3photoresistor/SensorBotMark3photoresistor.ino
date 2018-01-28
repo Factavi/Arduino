@@ -5,12 +5,22 @@
 //motors independently forward and backward, and with speed 
 //adjustable with pulse-width modulation (PWM). 
 
+/*
+ * This is the photoresistor robot
+ * 
+ * 
+ * 
+ * 
+ */
+
 
 const int sensorPin = A0;
-
 int sensorValue = 0;
 int sensorLowThreshold = 1;
 int sensorHighThreshold = 1000;
+
+const int dialPin = A1; // we are adding a potentiometer to adjust settings on the fly
+int dialValue = 0;  // variable to store the setting on the potentiometer 
 
 // Hook up the Arduino to the L293 IC, and define constants: 
 
@@ -58,6 +68,11 @@ void setup() {
 }
 
 void loop() {
+
+dialValue = analogRead(dialPin);
+Serial.print("dial Value: ");
+Serial.println(dialValue);
+  
 int oldSensorValue = sensorValue;
 sensorValue = analogRead(sensorPin);
 int sensorDifference = oldSensorValue -sensorValue; 
@@ -65,8 +80,17 @@ int sensorDifference = oldSensorValue -sensorValue;
   if ( (sensorValue > sensorLowThreshold) && (sensorValue < sensorHighThreshold) ){
       Serial.print("In light range.\n");
       Serial.print(sensorValue);
-      if ( sensorDifference < -50 ){
+      if ( sensorDifference < -5   && oldSensorValue != 0 ){
         Serial.print("I notice I am getting closer to shadow.\n"); 
+        goBackward(); 
+        delay(1000);
+       //goRight();
+       //   delay(200);
+      }
+      else 
+      {
+        Serial.println("I feel I should be safe going forward.");
+        goForward();
       }
   }
   else {

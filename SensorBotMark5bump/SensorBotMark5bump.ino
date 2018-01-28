@@ -5,16 +5,24 @@
 //motors independently forward and backward, and with speed 
 //adjustable with pulse-width modulation (PWM). 
 
-
 /*
- * This is the infrared robot
+ * This is the bump robot
+ * 
+ * 
+ * 
  * 
  */
 
 
+const int sensorPin = A0; // this pin will be used accross bot varieties, can be used for analog or digital input
+int wallCounter = 0; // counter to see how many times we have encountered a wall, for making decisions to turn right instead of left
+int sensorValue = 0; // storage for a value for whatever sensor <-- edit this description.
 
-const int sensorPin = 12;
+unsigned long currenttime = millis(); // time since the last "bump"
+unsigned long basetime = millis();  // the time since the second to last bump // 
 
+const int dialPin = A1; // we are adding a potentiometer to adjust settings on the fly
+int dialValue = 0;  // variable to store the setting on the potentiometer 
 
 // Hook up the Arduino to the L293 IC, and define constants: 
 
@@ -61,18 +69,53 @@ void setup() {
   digitalWrite(rightEnableDriver, HIGH);
 }
 
-void loop() {
-
-  if (digitalRead(sensorPin)){
+  void loop() {
+  //read sensor
+  sensorValue = digitalRead(sensorPin);
+  if (sensorValue == HIGH) { //if no bump go forward
+    Serial.println("Way is clear, go forward");
+    Serial.print("Wall counter: ");
+    Serial.println(wallCounter);
     goForward();
+    wallCounter = 0; 
   }
   else {
-    goBackward();
+    currenttime = millis(); //we just bumped so set the current bump time to now 
+//    if (wallCounter < 1) { //if first bump back up a little and turn left
+      if ( (currenttime -  basetime) > 2000) { //if this is first bump within 2 sec, back up a little and turn left
+      Serial.println("First bump, back up and turn left");
+      Serial.print("Current time: ");
+      Serial.println(currenttime);
+      Serial.print("Base time: ");
+      Serial.println(basetime);
+              basetime = millis(); //setting the time to compare for next time
+      goBackward();
+      delay(500);
+      goLeft();
+      delay(500);
+      //++wallCounter;
+
+    } else { //if subsequent bump back up a little and turn right and repeat
+      Serial.println("Subsequent bump, back up and turn right");
+      Serial.print("Current time: ");
+      Serial.println(currenttime);
+      Serial.print("Base time: ");
+      Serial.println(basetime);
+        basetime = millis(); //setting the time to compare for next time
+      goBackward();
+      delay(500);
+      goRight();
+      delay(500);
+      //++wallCounter;
+    }    
   }
-  delay(500);
-
-
   
+//  delay(500);
+//  dialValue = analogRead(dialPin);
+//  Serial.print("dial Value: ");
+//  Serial.println(dialValue);
+Serial.println(" ");
+
 }
 
 void goForward(){
