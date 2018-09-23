@@ -14,8 +14,8 @@ void light();
 void setup() {
   pinMode(light_pin, OUTPUT);
   pinMode(fan_pin, OUTPUT);
-  pinMode(fan_control, INPUT PULLUP);
-  pinMode(light_control, INPUT PULLUP);
+  pinMode(fan_control, INPUT_PULLUP);
+  pinMode(light_control, INPUT_PULLUP);
 }
 
 void loop() {
@@ -25,6 +25,7 @@ void loop() {
       fan_setting = 0;
     }
     fan();
+    delay(200);
   }
   if (digitalRead(light_control) == LOW) {
     light_setting++;
@@ -32,8 +33,8 @@ void loop() {
       light_setting = 0;
     }
     light();
+    delay(200);
   }
-  delay(1000);
 }
 
 void fan() {

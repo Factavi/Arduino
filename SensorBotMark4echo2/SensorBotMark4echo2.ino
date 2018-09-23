@@ -6,7 +6,7 @@
 //adjustable with pulse-width modulation (PWM). 
 
 /*
- * This is the bump robot
+ * This is the echo robot
  * 
  * 
  * 
@@ -14,6 +14,8 @@
  */
  
 const int sensorPin = A0; // this pin will be used accross bot varieties, can be used for analog or digital input
+                          // in this robot it hears the echo come back
+const int triggerPin = 13; // this pin is used to send the echo signal out
 int sensorValue = 0; // storage for a value for whatever sensor <-- edit this description.
 unsigned long currenttime = millis(); // time since the last "bump"
 unsigned long basetime = millis();  // the time since the second to last bump // 
@@ -31,7 +33,7 @@ unsigned long basetime = millis();  // the time since the second to last bump //
   // pin 6 on IC = driverOutput2Y, goes to L motor
   const int driverInput2A = 2;  // pin 7 on IC 
   // pin 8 on IC  is positive power source for the motors 
-
+ 
 //side R (going from bottom right to top right on IC, as is the convention) 
   const int rightEnableDriver = 10;  //pin 9 on IC, enableDriver34EN, on a PWM-capable arduino pin
   const int driverInput3A = 6; // pin 10 on IC 
@@ -40,9 +42,13 @@ unsigned long basetime = millis();  // the time since the second to last bump //
   // pin 13 on IC = ground 
   // pin 14 on IC = driverOutput4Y, goes to R motor 
   const int driverInput4A = 7; // pin 15 on IC 
-  // pin 16 on IC powers the IC, needs 5V 
+  // pin 16 on IC powers the IC, needs 5V  
   
 void setup() {
+
+  pinMode(sensorPin, INPUT);  // unsure if we need to explicitly say this
+  pinMode(triggerPin, OUTPUT); // need to say the echo is sending out
+  
   Serial.begin(9600);
   pinMode(leftEnableDriver, OUTPUT);
   pinMode(rightEnableDriver, OUTPUT); 
@@ -57,13 +63,16 @@ void setup() {
 }
 
 void loop() {
-  //read sensor
-  sensorValue = digitalRead(sensorPin);
-  if (sensorValue == HIGH) { //if no bump go forward
-    Serial.println("Way is clear, go forward");
-    goForward();
-  }
-  else {
+  long duration, distance;
+  digitalWrite(triggerPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(triggerPin, HIGH); //SEND PING
+  delayMicroseconds(10); 
+  digitalWrite(triggerPin, LOW); 
+  duration = pulseIn(sensorPin, HIGH); //listening for PING
+  distance = (duration/2) / 29.1; // math to determine distance in CM, math is off
+  if ( distance < 15 ) {
+    Serial.println("I notice I am near a wall");
     currenttime = millis(); //we just bumped so set the current bump time to now
     if ( (currenttime -  basetime) > 2000) { //if this is first bump within 2 sec, back up a little and turn left
       Serial.println("First bump, back up and turn left");
@@ -76,7 +85,7 @@ void loop() {
       delay(500);
       goLeft();
       delay(500);
-      } 
+     } 
      else { //if subsequent bump back up a little and turn right and repeat
       Serial.println("Subsequent bump, back up and turn right");
       Serial.print("Current time: ");
@@ -88,9 +97,22 @@ void loop() {
       delay(500);
       goRight();
       delay(500);
-     }    
+     }
   }
-  Serial.println(" ");
+  else {
+    Serial.println("Way is clear, go forward");
+    goForward();
+  }
+ 
+  if (distance >= 200 || distance <= 0){
+    Serial.println("Out of range");
+  }
+  else {
+    Serial.print(distance);
+    Serial.println(" cm");
+  }
+
+Serial.println(" ");
 }
 
 void goForward(){

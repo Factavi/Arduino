@@ -6,24 +6,27 @@
 //adjustable with pulse-width modulation (PWM). 
 
 /*
- * This is the photoresistor robot
+ * This is the infrared robot
  * 
  * 
  * 
  * 
  */
-
-
-const int sensorPin = A0;
-int sensorValue = 0;
+ 
+const int sensorPin = A0; // this pin will be used accross bot varieties, can be used for analog or digital input
+                          // in this robot it gets the digital infrared signal 
+int sensorValue = 0; // storage for a value for whatever sensor <-- edit this description.
 int sensorLowThreshold = 1;
 int sensorHighThreshold = 1000;
-
 const int dialPin = A1; // we are adding a potentiometer to adjust settings on the fly
+const int LEDPin = 11; //identify an output LED to show the threshold of the dial
 int dialValue = 0;  // variable to store the setting on the potentiometer 
 
-// Hook up the Arduino to the L293 IC, and define constants: 
+unsigned long currenttime = millis(); // time since the last "bump"
+unsigned long basetime = millis();  // the time since the second to last bump // 
 
+// Hook up the Arduino to the L293 IC, and define constants: 
+//
 // side L (going from top left to bottom left on IC) 
   const int leftEnableDriver = 9; // pin 1 on IC, enableDriver12EN, on a PWM-capable arduino pin
   const int driverInput1A = 3;  // pin 2 on IC 
@@ -43,14 +46,11 @@ int dialValue = 0;  // variable to store the setting on the potentiometer
   // pin 14 on IC = driverOutput4Y, goes to R motor 
   const int driverInput4A = 7; // pin 15 on IC 
   // pin 16 on IC powers the IC, needs 5V 
-
-// debug LEDs
-  const int forwardLED = 4;
-  const int backwardLED = 5;
-  const int rightLED = 8;
-  const int leftLED = 12;
   
 void setup() {
+
+  pinMode(sensorPin, INPUT);  // unsure if we need to explicitly say this
+
   Serial.begin(9600);
   pinMode(leftEnableDriver, OUTPUT);
   pinMode(rightEnableDriver, OUTPUT); 
@@ -59,89 +59,79 @@ void setup() {
   pinMode(driverInput3A, OUTPUT);
   pinMode(driverInput4A, OUTPUT);
 
-  pinMode(forwardLED, OUTPUT);
-  pinMode(backwardLED, OUTPUT);
-
   //set the wheels to spinning
   digitalWrite(leftEnableDriver, HIGH);
   digitalWrite(rightEnableDriver, HIGH);
+
+  pinMode(LEDPin, OUTPUT);
 }
 
 void loop() {
 
-dialValue = analogRead(dialPin);
-Serial.print("dial Value: ");
-Serial.println(dialValue);
-  
-int oldSensorValue = sensorValue;
-sensorValue = analogRead(sensorPin);
-int sensorDifference = oldSensorValue -sensorValue; 
-  
-  if ( (sensorValue > sensorLowThreshold) && (sensorValue < sensorHighThreshold) ){
-      Serial.print("In light range.\n");
-      Serial.print(sensorValue);
-      if ( sensorDifference < -5   && oldSensorValue != 0 ){
-        Serial.print("I notice I am getting closer to shadow.\n"); 
-        goBackward(); 
-        delay(1000);
-       //goRight();
-       //   delay(200);
-      }
-      else 
-      {
-        Serial.println("I feel I should be safe going forward.");
-        goForward();
-      }
+  if (!digitalRead(sensorPin))
+  {
+    Serial.println("I notice I am near a wall");
+    currenttime = millis(); //we just bumped so set the current bump time to now
+    if ( (currenttime -  basetime) > 2000) { //if this is first bump within 2 sec, back up a little and turn left
+      Serial.println("First bump, back up and turn left");
+      Serial.print("Current time: ");
+      Serial.println(currenttime);
+      Serial.print("Base time: ");
+      Serial.println(basetime);
+      basetime = millis(); //setting the time to compare for next time
+      goBackward();
+      delay(500);
+      goLeft();
+      delay(500);
+     } 
+     else { //if subsequent bump back up a little and turn right and repeat
+      Serial.println("Subsequent bump, back up and turn right");
+      Serial.print("Current time: ");
+      Serial.println(currenttime);
+      Serial.print("Base time: ");
+      Serial.println(basetime);
+      basetime = millis(); //setting the time to compare for next time
+      goBackward();
+      delay(500);
+      goRight();
+      delay(500);
+     }
   }
   else {
-    Serial.print("Out of light range.\n");
-    Serial.print(sensorValue);
+    Serial.println("Way is clear, go forward");
+    goForward();
   }
-  delay(500); 
-
+Serial.println(" ");
 }
 
 void goForward(){
-    Serial.print("Going Forward");
+  Serial.print("Going Forward"); 
   //make both sides of wheels go forward
   digitalWrite(driverInput1A, HIGH);
   digitalWrite(driverInput2A, LOW);
   digitalWrite(driverInput3A, HIGH);
   digitalWrite(driverInput4A, LOW);
-  //debug lights
-  digitalWrite(forwardLED, HIGH);
-  digitalWrite(backwardLED, LOW);
-  digitalWrite(rightLED, LOW);
-  digitalWrite(leftLED, LOW);
+
 }
 
 void goBackward(){
-    Serial.print("Going Backward ");
+  Serial.print("Going Backward "); 
   //make both sides of wheels go backward
   digitalWrite(driverInput1A, LOW);
   digitalWrite(driverInput2A, HIGH);
   digitalWrite(driverInput3A, LOW);
   digitalWrite(driverInput4A, HIGH);
-  //debug lights
-  digitalWrite(forwardLED, LOW);
-  digitalWrite(backwardLED, HIGH);
-  digitalWrite(rightLED, LOW);
-  digitalWrite(leftLED, LOW);
+
 }
 
 void goRight(){
-    Serial.print("Going Right ");
+  Serial.print("Going Right "); 
   //make left side go forward
   digitalWrite(driverInput1A, HIGH);
   digitalWrite(driverInput2A, LOW);
   //make right side go forward
   digitalWrite(driverInput3A, LOW);
   digitalWrite(driverInput4A, HIGH);    
-  //debug lights
-  digitalWrite(forwardLED, LOW);
-  digitalWrite(backwardLED, LOW);
-  digitalWrite(rightLED, HIGH);
-  digitalWrite(leftLED, LOW);
 }
 
 void goLeft(){
@@ -152,11 +142,6 @@ void goLeft(){
   //make right side go forward
   digitalWrite(driverInput3A, HIGH);
   digitalWrite(driverInput4A, LOW);
-  //debug lights
-  digitalWrite(forwardLED, LOW);
-  digitalWrite(backwardLED, LOW);
-  digitalWrite(rightLED, LOW);
-  digitalWrite(leftLED, HIGH);
 }
 
 
